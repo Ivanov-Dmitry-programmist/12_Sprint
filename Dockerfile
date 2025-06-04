@@ -1,20 +1,11 @@
-FROM golang:1.23.4-alpine AS builder
+FROM golang:1.22
 
 WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+RUN go mod tidy
 
-FROM alpine:latest
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main main.go
 
-WORKDIR /app
-
-COPY --from=builder /app/main .
-
-COPY --from=builder /app/tracker.db .
-
-CMD ["./main"]
+CMD ["/main"] 
