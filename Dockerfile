@@ -1,11 +1,27 @@
-FROM golang:1.22
+# Этап сборки
+FROM golang:1.23.4-alpine AS builder
 
 WORKDIR /app
 
+# Установим зависимости
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Копируем остальной код
 COPY . .
 
-RUN go mod tidy
+# Сборка бинарника
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main main.go
+# Финальный образ
+FROM alpine:latest
 
-CMD ["/main"] 
+WORKDIR /app
+
+# Копируем бинарник
+COPY --from=builder /app/main .
+
+
+COPY --from=builder /app/tracker.db .
+
+CMD ["./main"]
